@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Procrastination Quiz – YourOrg</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f4f4;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    header img {
+      height: 50px;
+      margin-right: 15px;
+    }
+    h1 {
+      color: #0078D7;
+    }
+    .question {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .question label {
+      display: block;
+      margin: 5px 0;
+    }
+    #submitBtn, #exportBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0078D7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #exportBtn {
+      background: #00A878;
+      margin-left: 10px;
+    }
+    #result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #e0f7fa;
+      border-left: 5px solid #0078D7;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="https://via.placeholder.com/50x50.png?text=Logo" alt="YourOrg Logo">
+  <h1>YourOrg Procrastination Quiz</h1>
+</header>
+
+<form id="quizForm"></form>
+<button id="submitBtn">Submit Quiz</button>
+<button id="exportBtn">Export Results</button>
+
+<div id="result"></div>
+
+<script>
+  const questions = [
+    "How often do you delay starting tasks, even when they’re important?",
+    "When faced with a deadline, how do you usually respond?",
+    "Do you frequently find yourself doing less important tasks to avoid bigger ones?",
+    "How do you feel when you think about a task you’ve been avoiding?",
+    "Do you often underestimate how long tasks will take?",
+    "How often do distractions (e.g., social media, TV) interfere with your productivity?",
+    "Do you wait to feel “in the mood” before starting work?",
+    "How often do you make excuses to avoid tasks?",
+    "Do you feel your procrastination affects your goals or relationships?",
+    "After procrastinating, how do you usually feel?"
+  ];
+
+  const options = [
+    ["A. Rarely", "B. Sometimes", "C. Often", "D. Almost always"],
+    ["A. Start early and pace myself", "B. Plan to start early but get distracted", "C. Rush at the last minute", "D. Miss the deadline or ask for extensions"],
+    ["A. No, I prioritize well", "B. Occasionally", "C. Yes, regularly", "D. Constantly"],
+    ["A. Neutral or motivated", "B. Mildly anxious", "C. Stressed or overwhelmed", "D. Guilty and frustrated"],
+    ["A. No, I’m usually accurate", "B. Sometimes", "C. Often", "D. Always"],
+    ["A. Rarely", "B. Occasionally", "C. Frequently", "D. All the time"],
+    ["A. No, I work regardless", "B. Sometimes", "C. Often", "D. Always"],
+    ["A. Almost never", "B. Occasionally", "C. Frequently", "D. Constantly"],
+    ["A. Not at all", "B. Slightly", "C. Significantly", "D. Severely"],
+    ["A. Fine, no regrets", "B. A bit annoyed", "C. Guilty or disappointed", "D. Ashamed or defeated"]
+  ];
+
+  const form = document.getElementById("quizForm");
+
+  questions.forEach((q, i) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerHTML = `<strong>Q${i + 1}. ${q}</strong>`;
+    options[i].forEach((opt, j) => {
+      div.innerHTML += `
+        <label>
+          <input type="radio" name="q${i}" value="${j}"> ${opt}
+        </label>
+      `;
+    });
+    form.appendChild(div);
+  });
+
+  document.getElementById("submitBtn").addEventListener("click", () => {
+    let score = 0;
+    let unanswered = false;
+
+    for (let i = 0; i < questions.length; i++) {
+      const selected = document.querySelector(`input[name="q${i}"]:checked`);
+      if (!selected) {
+        unanswered = true;
+        break;
+      }
+      score += parseInt(selected.value);
+    }
+
+    const resultDiv = document.getElementById("result");
+    if (unanswered) {
+      resultDiv.innerHTML = "<strong>Please answer all questions before submitting.</strong>";
+      return;
+    }
+
+    let level = "";
+    let advice = "";
+
+    if (score <= 5) {
+      level = "🟢 Low procrastination tendencies";
+      advice = "You manage your time well and rarely delay tasks. Keep up the good habits!";
+    } else if (score <= 15) {
+      level = "🟡 Moderate procrastination";
+      advice = "You occasionally delay tasks, which may affect your productivity. Consider using time-blocking or accountability tools.";
+    } else if (score <= 24) {
+      level = "🟠 High procrastination";
+      advice = "Procrastination is likely impacting your performance. Try breaking tasks into smaller steps and reducing distractions.";
+    } else {
+      level = "🔴 Severe procrastination";
+      advice = "Your procrastination may be affecting your goals and well-being. Consider seeking support or coaching to build better habits.";
+    }
+
+    const timestamp = new Date().toLocaleString();
+    const entry = { score, level, timestamp };
+    const results = JSON.parse(localStorage.getItem("quizResults") || "[]");
+    results.push(entry);
+    localStorage.setItem("quizResults", JSON.stringify(results));
+
+    resultDiv.innerHTML = `
+      <h2>Your Score: ${score}/30</h2>
+      <h3>${level}</h3>
+      <p>${advice}</p>
+      <p><em>Saved at ${timestamp}</em></p>
+    `;
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const results = JSON.parse(localStorage.getItem("quizResults") || "[]");
+    if (results.length === 0) {
+      alert("No results to export.");
+      return;
+    }
+
+    let csv = "Score,Level,Timestamp\n";
+    results.forEach(r => {
+      csv += `${r.score},"${r.level}",${r.timestamp}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "procrastination_quiz_results.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+</body>
+</html>
